@@ -6,8 +6,12 @@ var logger = require('morgan');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
+const promisePool = require('./config/MySQLConnect');
+const connectDB = require('./config/MongoDBConnect');
+
 
 var app = express();
+connectDB()
 
 
 app.use(logger('dev'));
