@@ -11,6 +11,12 @@ services:
     volumes:
       - ./databases/init.sql:/docker-entrypoint-initdb.d/init.sql
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   backend:
     build: ./backend
@@ -20,10 +26,12 @@ services:
     environment:
       - DB_HOST=db
       - DB_USER=root
+      - DB_PORT=3306
       - DB_PASSWORD=123456
-      - DB_NAME=ElearingDatabase
+      - DB_NAME=ElearningDatabase
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
