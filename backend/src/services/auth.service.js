@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/MySQLConnect');
 const { TokenExpiredError } = require('jsonwebtoken');
 const JsonWebTokenError = require('jsonwebtoken/lib/JsonWebTokenError');
+const { token } = require('morgan');
 
 const login = async (email, password) => {
     const [users] = await db.execute('SELECT * FROM user WHERE email = ?', [email]);
@@ -73,6 +74,16 @@ const refreshToken = async (oldRefreshToken) => {
     
         const newToken = generateToken(user.id, user.role, '1d');
         const newRefreshToken = generateToken(user.id, user.role, '30d');
+
+        const [tokenDelete] = await db.execute('DELETE from refresh_tokens WHERE token = ?', [oldRefreshToken]);
+        if (tokenDelete.affectedRows === 0) {
+            throw new Error("Delete token failed");
+        }
+
+        const [result] = await db.execute('INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 30 DAY))', [user.id, newRefreshToken]);
+        if (result.affectedRows === 0) {
+            throw new Error("Create refresh token failed");
+        }
 
         return {newToken, newRefreshToken};
     }
