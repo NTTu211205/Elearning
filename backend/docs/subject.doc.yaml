@@ -1,0 +1,324 @@
+openapi: 3.0.3
+info:
+  title: E-Learning Backend API — Subject
+  description: |
+    API tài liệu cho các endpoint quản lý **môn học (Subject)** trong hệ thống E-Learning.
+
+    ## Lưu ý
+    Các route hiện tại **chưa áp dụng middleware xác thực**
+    (middleware đang được comment-out trong `subject.route.js`).
+    Khi production, các endpoint tạo / sửa / xóa sẽ yêu cầu:
+    - `POST /subject` — Bearer Token + role `admin`
+    - `PUT /subject/:id` — Bearer Token + role `admin`
+    - `DELETE /subject/:id` — Bearer Token + role `admin`
+    - `GET /subject/:id` — Bearer Token (bất kỳ role)
+  version: 1.0.0
+  contact:
+    name: Nguyễn Thành Tú
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+
+tags:
+  - name: Subjects
+    description: Quản lý môn học trong hệ thống
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Nhập access token nhận được sau khi đăng nhập
+
+  schemas:
+    SubjectObject:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID tự tăng của môn học trong cơ sở dữ liệu
+          example: 1
+        name:
+          type: string
+          description: Tên môn học
+          example: "Cơ sở dữ liệu"
+        lessons:
+          type: integer
+          description: Số buổi học của môn
+          example: 30
+        status:
+          type: integer
+          description: Trạng thái môn học — 1 là Đang hoạt động, 0 là Đã xóa (soft delete)
+          enum: [0, 1]
+          example: 1
+
+    SubjectInput:
+      type: object
+      required:
+        - name
+        - lessons
+      properties:
+        name:
+          type: string
+          description: Tên môn học
+          example: "Cơ sở dữ liệu"
+        lessons:
+          type: integer
+          description: Số buổi học
+          example: 30
+
+    SuccessMessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Success"
+
+    ErrorMessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Thông báo lỗi"
+
+paths:
+
+  # ─────────────────────────────────────────────
+  #  SUBJECT ENDPOINTS
+  # ─────────────────────────────────────────────
+
+  /subject:
+    post:
+      summary: Thêm môn học mới
+      description: |
+        Tạo một môn học mới trong hệ thống.
+
+        - Môn học được khởi tạo với `status = 1` (đang hoạt động).
+        - Trả về thông tin môn học vừa được tạo, bao gồm `id` do database sinh ra.
+
+        > ⚠️ Hiện tại endpoint **không yêu cầu xác thực** (middleware đang bị comment-out).
+        > Khi production, sẽ yêu cầu Bearer Token + role `admin`.
+      tags:
+        - Subjects
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectInput'
+            example:
+              name: "Cơ sở dữ liệu"
+              lessons: 30
+      responses:
+        '200':
+          description: Tạo môn học thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Success"
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        description: ID được gán bởi database
+                        example: 3
+                      name:
+                        type: string
+                        example: "Cơ sở dữ liệu"
+                      lessons:
+                        type: integer
+                        example: 30
+              example:
+                message: "Success"
+                data:
+                  id: 3
+                  name: "Cơ sở dữ liệu"
+                  lessons: 30
+        '400':
+          description: Lỗi khi tạo môn học (thiếu trường bắt buộc hoặc lỗi database)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              example:
+                message: "Column 'name' cannot be null"
+
+  /subject/{id}:
+    get:
+      summary: Lấy thông tin chi tiết một môn học
+      description: |
+        Trả về toàn bộ thông tin của môn học theo `id`.
+
+        - Chỉ trả về môn học có `status = 1` (đang hoạt động).
+        - Nếu môn học đã bị xóa mềm (`status = 0`) hoặc không tồn tại, trả về lỗi `400`.
+
+        > ⚠️ Hiện tại endpoint **không yêu cầu xác thực**.
+        > Khi production, sẽ yêu cầu Bearer Token (bất kỳ role nào).
+      tags:
+        - Subjects
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID của môn học cần tra cứu
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: Lấy thông tin môn học thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Success"
+                  data:
+                    $ref: '#/components/schemas/SubjectObject'
+              example:
+                message: "Success"
+                data:
+                  id: 1
+                  name: "Cơ sở dữ liệu"
+                  lessons: 30
+                  status: 1
+        '400':
+          description: Không tìm thấy môn học hoặc môn học đã bị xóa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              example:
+                message: "Class not found"
+
+    put:
+      summary: Cập nhật thông tin môn học
+      description: |
+        Cập nhật tên và số buổi học của môn học theo `id`.
+
+        - Chỉ cập nhật được môn học có `status = 1` (đang hoạt động).
+        - Nếu không tìm thấy môn học (hoặc đã xóa mềm), trả về lỗi `400`.
+        - Trả về thông tin môn học sau khi cập nhật.
+
+        > ⚠️ Hiện tại endpoint **không yêu cầu xác thực**.
+        > Khi production, sẽ yêu cầu Bearer Token + role `admin`.
+      tags:
+        - Subjects
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID của môn học cần cập nhật
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubjectInput'
+            example:
+              name: "Cơ sở dữ liệu nâng cao"
+              lessons: 45
+      responses:
+        '200':
+          description: Cập nhật môn học thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Success"
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      name:
+                        type: string
+                        example: "Cơ sở dữ liệu nâng cao"
+                      lessons:
+                        type: integer
+                        example: 45
+              example:
+                message: "Success"
+                data:
+                  id: 1
+                  name: "Cơ sở dữ liệu nâng cao"
+                  lessons: 45
+        '400':
+          description: Không tìm thấy môn học hoặc lỗi database
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                not_found:
+                  summary: Môn học không tồn tại
+                  value:
+                    message: "Subject not exist"
+                db_error:
+                  summary: Lỗi database
+                  value:
+                    message: "ER_BAD_FIELD_ERROR: Unknown column..."
+
+    delete:
+      summary: Xóa môn học (soft delete)
+      description: |
+        Thực hiện **xóa mềm** môn học bằng cách chuyển `status` từ `1` → `0`.
+
+        - Dữ liệu môn học vẫn còn trong database nhưng sẽ không còn xuất hiện trong các truy vấn thông thường.
+        - Nếu không tìm thấy môn học với `id` được cung cấp, trả về lỗi `400`.
+        - Trả về `true` khi xóa thành công.
+
+        > ⚠️ Hiện tại endpoint **không yêu cầu xác thực**.
+        > Khi production, sẽ yêu cầu Bearer Token + role `admin`.
+      tags:
+        - Subjects
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID của môn học cần xóa
+          schema:
+            type: integer
+          example: 2
+      responses:
+        '200':
+          description: Xóa môn học thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Success"
+                  data:
+                    type: boolean
+                    description: Trả về `true` khi xóa thành công
+                    example: true
+              example:
+                message: "Success"
+                data: true
+        '400':
+          description: Không tìm thấy môn học hoặc lỗi database
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              example:
+                message: "Subject not exist"

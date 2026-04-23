@@ -1,6 +1,7 @@
 const db = require('../config/MySQLConnect');
 const bcrypt = require('bcryptjs');
 
+//create User
 const createUser = async (userData) => {
     const {name, dob, role, email, phone, password} = userData;
 
@@ -22,11 +23,21 @@ const createUser = async (userData) => {
     };
 };
 
+//get all user include: active and non-active
 const getAllUser = async() => {
-    const [result] = await db.execute('SELECT name, dob, role, email, phone FROM user');
+    const [result] = await db.execute('SELECT id, name, dob, role, email, phone FROM user');
     return result;
 }
 
+const getUserFollowingStatus = async(status) => {
+    if (!status) {
+        throw new Error('Status not valid');
+    }
+    const [result] = await db.execute('SELECT id, name, dob, role, email, phone FROM user WHERE status = ?', [status]);
+    return result;
+}
+
+// delete user
 const deleteUser = async(id) => {
     const [result] = await db.execute("UPDATE user SET status = 0 WHERE id = ?" , [id]);
     
@@ -37,23 +48,25 @@ const deleteUser = async(id) => {
     return true;
 }
 
+// update user info
 const updateUser = async(id, userData) => {
-    const {name, dob, email, phone, role} = userData;
+    const {name, dob, email, phone} = userData;
 
-    const [user] = await db.execute('SELECT * FROM user WHERE id = ?', [id]);
+    const [user] = await db.execute('SELECT * FROM user WHERE id = ? AND status = 1', [id]);
     if (user.length === 0) {
         throw new Error("User not exist");
     }
 
     const [result] = await db.execute
-    ('UPDATE user SET name = ?, dob = ?, email = ?, phone = ?, role =? WHERE id = ?', [name, dob, email, phone, role, id]);
+    ('UPDATE user SET name = ?, dob = ?, email = ?, phone = ? WHERE id = ?', [name, dob, email, phone, id]);
 
     if (result.affectedRows === 0) {
         throw new Error("Update failed");
     }
-    return {id, name, dob, email, phone, role};
+    return {id, name, dob, email, phone};
 }
 
+// get user by id
 const getUserById = async(id) => {
     const [result] = await db.execute('SELECT name, dob, phone, email, role FROM user WHERE id = ?', [id]);
 
@@ -63,4 +76,4 @@ const getUserById = async(id) => {
     return result[0];
 }
 
-module.exports = {createUser, getAllUser, deleteUser, updateUser, getUserById};
+module.exports = {createUser, getAllUser, deleteUser, updateUser, getUserById, getUserFollowingStatus};

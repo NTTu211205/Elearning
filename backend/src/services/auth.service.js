@@ -6,7 +6,7 @@ const JsonWebTokenError = require('jsonwebtoken/lib/JsonWebTokenError');
 const { token } = require('morgan');
 
 const login = async (email, password) => {
-    const [users] = await db.execute('SELECT * FROM user WHERE email = ?', [email]);
+    const [users] = await db.execute('SELECT * FROM user WHERE email = ? AND status = 1', [email]);
     if (users.length === 0) {
         throw new Error('User not exist');
     }

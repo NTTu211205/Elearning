@@ -1,5 +1,7 @@
 const userService = require('../services/user.service');
 
+
+// create user
 const addUser = async(req, res) => {
     try {
         const {name, dob, role, email, phone, password} = req.body;
@@ -16,9 +18,17 @@ const addUser = async(req, res) => {
     }
 };
 
+// get all user include: active and non-active
 const getAllUser = async (req, res) => {
     try {
-        const users = await userService.getAllUser();
+        const {status} = req.query;
+        let users = null;
+        if (!status) {
+            users = await userService.getAllUser();
+        }
+        else {
+            users = await userService.getUserFollowingStatus(status);
+        }
 
         res.status(200).json({
             message: 'Success',
@@ -30,6 +40,7 @@ const getAllUser = async (req, res) => {
     }
 }
 
+// delete user
 const deleteUser = async (req, res) => {
     try {
         const {id} = req.params;
@@ -46,12 +57,13 @@ const deleteUser = async (req, res) => {
     }
 }
 
+// update user info
 const updateUser = async (req, res) => {
     try {
         const {id} = req.params;
-        const {name, dob, email, phone, role} = req.body;
+        const {name, dob, email, phone} = req.body;
 
-        const result = await userService.updateUser(id, {name, dob, email, phone, role});
+        const result = await userService.updateUser(id, {name, dob, email, phone});
 
         res.status(200).json({
             message: 'Success',
@@ -63,6 +75,7 @@ const updateUser = async (req, res) => {
     }
 }
 
+// get user by id
 const getUserById = async (req, res) => {
     try {
         const {id} = req.params;
