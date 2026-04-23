@@ -396,14 +396,32 @@ paths:
                 message: "User exist"
 
     get:
-      summary: Lấy danh sách tất cả người dùng
+      summary: Lấy danh sách người dùng
       description: |
-        Trả về danh sách toàn bộ người dùng trong hệ thống.  
+        Trả về danh sách người dùng trong hệ thống.  
         **Yêu cầu:** Xác thực + Role **admin**.
+
+        **Query parameter tùy chọn:**
+        - Không truyền `status` → trả về **tất cả** người dùng (cả active lẫn bị khóa)
+        - Truyền `status=1` → chỉ trả về người dùng **đang hoạt động**
+        - Truyền `status=0` → chỉ trả về người dùng **bị khóa**
       tags:
         - Users
       security:
         - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: |
+            Lọc người dùng theo trạng thái tài khoản.
+            - `1` — Chỉ lấy tài khoản đang hoạt động
+            - `0` — Chỉ lấy tài khoản bị khóa
+            - Bỏ trống — Lấy tất cả
+          schema:
+            type: integer
+            enum: [0, 1]
+          example: 1
       responses:
         '200':
           description: Lấy danh sách thành công
@@ -420,6 +438,9 @@ paths:
                     items:
                       type: object
                       properties:
+                        id:
+                          type: integer
+                          example: 1
                         name:
                           type: string
                           example: "Nguyễn Thành Tú"
@@ -538,13 +559,8 @@ paths:
         Cập nhật thông tin cá nhân của người dùng theo ID.  
         **Yêu cầu:** Xác thực (bất kỳ role nào).  
 
-        **Validation (thực hiện bởi middleware):**
-        - `name`: không được để trống
-        - `email`: phải đúng định dạng email
-        - `role`: phải là một trong `student`, `teacher`, `admin`
-        - `phone`: đúng 10 chữ số
-
-        > ⚠️ Tất cả các trường đều bắt buộc trong request body (theo validation hiện tại).
+        **Các trường có thể cập nhật:** `name`, `dob`, `email`, `phone`.  
+        > ⚠️ Trường `role` **không thể thay đổi** qua endpoint này.
       tags:
         - Users
       security:
@@ -568,27 +584,25 @@ paths:
                 - dob
                 - email
                 - phone
-                - role
               properties:
                 name:
                   type: string
+                  description: Họ và tên đầy đủ
                   example: "Nguyễn Thành Tú (Updated)"
                 dob:
                   type: string
                   format: date
+                  description: Ngày sinh (YYYY-MM-DD)
                   example: "2005-12-21"
                 email:
                   type: string
                   format: email
+                  description: Địa chỉ email mới
                   example: "thanhtu.new@student.tdtu.edu.vn"
                 phone:
                   type: string
                   description: Số điện thoại 10 chữ số
                   example: "0988888888"
-                role:
-                  type: string
-                  enum: [student, teacher, admin]
-                  example: "student"
       responses:
         '200':
           description: Cập nhật thành công
@@ -619,9 +633,6 @@ paths:
                       phone:
                         type: string
                         example: "0988888888"
-                      role:
-                        type: string
-                        example: "student"
         '400':
           description: Lỗi validation, không tìm thấy user, hoặc lỗi hệ thống
           content:
@@ -629,9 +640,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorMessage'
               examples:
-                validation_fail:
-                  summary: Lỗi validate
-                  value: { message: "Email is not valid" }
                 not_found:
                   summary: Không tìm thấy người dùng
                   value: { message: "User not exist" }
@@ -710,3 +718,71 @@ paths:
                 $ref: '#/components/schemas/ErrorMessage'
               example:
                 message: "Not permission"
+
+  # ─────────────────────────────────────────────
+  #  USER PROFILE ENDPOINT
+  # ─────────────────────────────────────────────
+
+  /users/profile:
+    get:
+      summary: Lấy thông tin cá nhân của người dùng đang đăng nhập
+      description: |
+        Trả về thông tin của người dùng hiện tại dựa trên **JWT token** trong header.  
+        Không cần truyền `id` — server tự xác định danh tính qua token.
+
+        > ⚠️ Endpoint này phải được khai báo **trước** route `/users/:id` trong code để tránh bị
+        > match nhầm thành `id = "profile"`.
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lấy thông tin thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Success"
+                  data:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        example: "Nguyễn Thành Tú"
+                      dob:
+                        type: string
+                        format: date
+                        example: "2005-12-21"
+                      phone:
+                        type: string
+                        example: "0901234567"
+                      email:
+                        type: string
+                        format: email
+                        example: "thanhtu.52300076@student.tdtu.edu.vn"
+                      role:
+                        type: string
+                        example: "student"
+        '400':
+          description: Lỗi khi lấy thông tin (token không chứa user hợp lệ)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              example:
+                message: "User not exist"
+        '401':
+          description: Chưa đăng nhập hoặc token không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                no_token:
+                  value: { message: "Token not found" }
+                expired:
+                  value: { message: "Token expired", code: "TOKEN_EXPIRED" }

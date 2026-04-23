@@ -1,0 +1,158 @@
+openapi: 3.0.3
+info:
+  title: E-Learning Backend API — Class
+  description: |
+    API tài liệu cho các endpoint quản lý **lớp học (Class)** trong hệ thống E-Learning.
+
+    ## Lưu ý
+    Các route hiện tại **chưa áp dụng middleware xác thực**.
+    Khi production, các endpoint tạo / sửa / xóa lớp sẽ yêu cầu:
+    - `POST /class` — Bearer Token + role `admin`
+  version: 1.0.0
+  contact:
+    name: Nguyễn Thành Tú
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+
+tags:
+  - name: Classes
+    description: Quản lý lớp học trong hệ thống
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Nhập access token nhận được sau khi đăng nhập
+
+  schemas:
+    ClassObject:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID tự tăng của lớp học trong cơ sở dữ liệu
+          example: 1
+        subjectId:
+          type: integer
+          description: ID của môn học được giảng dạy trong lớp
+          example: 2
+        teacherId:
+          type: integer
+          description: ID của giáo viên phụ trách lớp (phải có role = teacher)
+          example: 5
+        quantity:
+          type: integer
+          description: Sĩ số tối đa của lớp học
+          example: 40
+
+    ClassInput:
+      type: object
+      required:
+        - subjectId
+        - teacherId
+        - quantity
+      properties:
+        subjectId:
+          type: integer
+          description: ID môn học (phải tồn tại và đang hoạt động — status = 1)
+          example: 2
+        teacherId:
+          type: integer
+          description: ID giáo viên (phải tồn tại, đang hoạt động, và có role = teacher)
+          example: 5
+        quantity:
+          type: integer
+          description: Sĩ số tối đa của lớp
+          example: 40
+
+    SuccessMessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Success"
+
+    ErrorMessage:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Thông báo lỗi"
+
+paths:
+
+  # ─────────────────────────────────────────────
+  #  CLASS ENDPOINTS
+  # ─────────────────────────────────────────────
+
+  /class:
+    post:
+      summary: Tạo lớp học mới
+      description: |
+        Tạo một lớp học mới trong hệ thống bằng cách liên kết một **môn học** với một **giáo viên**.
+
+        **Điều kiện hợp lệ:**
+        - `subjectId` phải trỏ đến môn học tồn tại và có `status = 1` (đang hoạt động).
+        - `teacherId` phải trỏ đến người dùng tồn tại, có `status = 1`, và có `role = teacher`.
+        - Nếu môn học hoặc giáo viên không hợp lệ, server trả về lỗi `400`.
+
+        **Dữ liệu trả về:**
+        - Thông tin lớp học vừa tạo, bao gồm `id` do database sinh ra.
+
+        > ⚠️ Hiện tại endpoint **không yêu cầu xác thực** (middleware đang bị comment-out).
+        > Khi production, sẽ yêu cầu Bearer Token + role `admin`.
+      tags:
+        - Classes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassInput'
+            example:
+              subjectId: 2
+              teacherId: 5
+              quantity: 40
+      responses:
+        '200':
+          description: Tạo lớp học thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Success"
+                  data:
+                    $ref: '#/components/schemas/ClassObject'
+              example:
+                message: "Success"
+                data:
+                  id: 1
+                  subjectId: 2
+                  teacherId: 5
+                  quantity: 40
+        '400':
+          description: Dữ liệu đầu vào không hợp lệ hoặc lỗi hệ thống
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                subject_not_valid:
+                  summary: Môn học không tồn tại hoặc đã bị xóa
+                  value:
+                    message: "Subject not valid"
+                teacher_not_valid:
+                  summary: Giáo viên không tồn tại, bị khóa, hoặc không có role teacher
+                  value:
+                    message: "Teacher not valid"
+                db_error:
+                  summary: Lỗi database
+                  value:
+                    message: "ER_NO_REFERENCED_ROW_2: Cannot add or update a child row..."

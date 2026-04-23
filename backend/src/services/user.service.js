@@ -68,6 +68,7 @@ const updateUser = async(id, userData) => {
 
 // get user by id
 const getUserById = async(id) => {
+    console.log("User service: ", id);
     const [result] = await db.execute('SELECT name, dob, phone, email, role FROM user WHERE id = ?', [id]);
 
     if (result.length === 0) {

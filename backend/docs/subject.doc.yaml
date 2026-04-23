@@ -322,3 +322,64 @@ paths:
                 $ref: '#/components/schemas/ErrorMessage'
               example:
                 message: "Subject not exist"
+
+  /subject/:
+    get:
+      summary: Lấy danh sách môn học
+      description: |
+        Trả về danh sách môn học trong hệ thống.
+
+        **Query parameter tùy chọn:**
+        - Không truyền `status` → trả về **tất cả** môn học (kể cả đã xóa mềm)
+        - Truyền `status=1` → chỉ trả về môn học **đang hoạt động**
+        - Truyền `status=0` → chỉ trả về môn học **đã bị xóa mềm**
+
+        > ⚠️ Hiện tại endpoint **không yêu cầu xác thực**.
+        > Khi production, sẽ yêu cầu Bearer Token (bất kỳ role nào).
+      tags:
+        - Subjects
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: |
+            Lọc môn học theo trạng thái.
+            - `1` — Chỉ lấy môn học đang hoạt động
+            - `0` — Chỉ lấy môn học đã bị xóa mềm
+            - Bỏ trống — Lấy tất cả
+          schema:
+            type: integer
+            enum: [0, 1]
+          example: 1
+      responses:
+        '200':
+          description: Lấy danh sách thành công
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Success"
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SubjectObject'
+              example:
+                message: "Success"
+                data:
+                  - id: 1
+                    name: "Cơ sở dữ liệu"
+                    lessons: 30
+                    status: 1
+                  - id: 2
+                    name: "Lập trình Web"
+                    lessons: 45
+                    status: 1
+        '400':
+          description: Lỗi truy xuất dữ liệu
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'

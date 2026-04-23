@@ -75,6 +75,22 @@ const updateUser = async (req, res) => {
     }
 }
 
+// get profile
+const getUserProfile = async(req, res) => {
+    try {
+        const {id, role} = req.user;
+        const result = await userService.getUserById(id);
+
+        res.status(200).json({
+            message: 'Success',
+            data: result
+        })
+    }
+    catch(error) {
+        res.status(400).json({message: error.message});
+    }
+}
+
 // get user by id
 const getUserById = async (req, res) => {
     try {
@@ -90,4 +106,4 @@ const getUserById = async (req, res) => {
     }
 }
 
-module.exports = {addUser, getAllUser, deleteUser, updateUser, getUserById};
+module.exports = {addUser, getAllUser, deleteUser, updateUser, getUserById, getUserProfile};
