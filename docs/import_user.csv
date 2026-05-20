@@ -1,0 +1,17 @@
+name,email,role,password,phone,dob
+student16,student16@gmail.com,student,123456,0913001016,2003-02-14
+student17,student17@gmail.com,student,123456,0913001017,2002-07-21
+student18,student18@gmail.com,student,123456,0913001018,2004-01-09
+student19,student19@gmail.com,student,123456,0913001019,2003-11-30
+student20,student20@gmail.com,student,123456,0913001020,2002-05-17
+student21,student21@gmail.com,student,123456,0913001021,2003-08-25
+student22,student22@gmail.com,student,123456,0913001022,2004-03-12
+student23,student23@gmail.com,student,123456,0913001023,2002-09-28
+student24,student24@gmail.com,student,123456,0913001024,2003-06-05
+student25,student25@gmail.com,student,123456,0913001025,2004-10-19
+
+teacher4,teacher4@gmail.com,teacher,123456,0913001026,1987-04-08
+teacher5,teacher5@gmail.com,teacher,123456,0913001027,1990-12-22
+teacher6,teacher6@gmail.com,teacher,123456,0913001028,1985-06-14
+teacher7,teacher7@gmail.com,teacher,123456,0913001029,1992-02-03
+teacher8,teacher8@gmail.com,teacher,123456,0913001030,1988-09-11

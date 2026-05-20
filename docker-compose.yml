@@ -11,6 +11,20 @@ services:
     volumes:
       - ./databases/init.sql:/docker-entrypoint-initdb.d/init.sql
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: elearning_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save "" --appendonly no
 
   backend:
     build: ./backend
@@ -18,18 +32,33 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - DB_HOST=db
+      - DB_HOST=database
       - DB_USER=root
+      - DB_PORT=3306
       - DB_PASSWORD=123456
-      - DB_NAME=ElearingDatabase
+      - DB_NAME=ElearningDatabase
+      - REDIS_URL=redis://elearning_redis:6379
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - CLIENT_URL=http://localhost:5173
+      - MONGODB_URI=mongodb+srv://ntu318485_db_user:ER9ohnN6Ih1YE8Z1@mycluster.x2druhi.mongodb.net/ElearningDatabase?appName=MyCluster
+      - JWT_SECRET=ElearningSecretKey2026_@VerySecure
+      - SMTP_USER=xanhnguyen08@gmail.com
+      - SMTP_PASS=unvfeicleazvlfgf
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   frontend:
     build: ./frontend
     container_name: elearning_frontend
     ports:
       - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     stdin_open: true
     depends_on:
       - backend

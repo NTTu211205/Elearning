@@ -15,3 +15,5 @@ Thumbs.db
 # Chặn thư mục build khi chạy frontend
 frontend/dist/
 frontend/build/
+
+Elearning.session.sql
