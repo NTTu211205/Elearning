@@ -1,1 +1,1 @@
-select * from doexam
+select * from user

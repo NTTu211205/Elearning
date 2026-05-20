@@ -40,6 +40,11 @@ services:
       - REDIS_URL=redis://elearning_redis:6379
       - SMTP_HOST=smtp.gmail.com
       - SMTP_PORT=587
+      - CLIENT_URL=http://localhost:5173
+      - MONGODB_URI=mongodb+srv://ntu318485_db_user:ER9ohnN6Ih1YE8Z1@mycluster.x2druhi.mongodb.net/ElearningDatabase?appName=MyCluster
+      - JWT_SECRET=ElearningSecretKey2026_@VerySecure
+      - SMTP_USER=xanhnguyen08@gmail.com
+      - SMTP_PASS=unvfeicleazvlfgf
     depends_on:
       db:
         condition: service_healthy

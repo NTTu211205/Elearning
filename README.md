@@ -75,7 +75,7 @@ git clone <repository-url>
 cd project
 
 # 2. Khởi động toàn bộ stack
-docker compose up --build
+docker compose up -d --build
 ```
 
 Sau khi khởi động thành công:
